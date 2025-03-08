@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ludo Game</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dice {
+            width: 60px;
+            height: 60px;
+            position: relative;
+            transition: transform 1s;
+        }
+        .player {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            position: absolute;
+            transition: all 0.3s ease;
+        }
+        .board-cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        @media (max-width: 640px) {
+            .board-cell {
+                width: 30px;
+                height: 30px;
+            }
+            .player {
+                width: 20px;
+                height: 20px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-blue-500 p-4">
+    <div class="container mx-auto max-w-4xl">
+        <div class="glass p-6 mb-4">
+            <h1 class="text-3xl text-white text-center mb-4">Ludo Game</h1>
+            <div class="flex justify-between items-center mb-4">
+                <div class="text-white">Current Player: <span id="currentPlayer" class="font-bold">Red</span></div>
+                <button id="rollDice" class="bg-white bg-opacity-20 px-4 py-2 rounded-lg text-white hover:bg-opacity-30">
+                    Roll Dice
+                </button>
+            </div>
+            <div id="diceResult" class="text-white text-center mb-4 text-2xl"></div>
+        </div>
+
+        <div class="glass p-6">
+            <div id="board" class="grid grid-cols-15 gap-0 max-w-fit mx-auto">
+                <!-- Board will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class LudoGame {
+            constructor() {
+                this.players = ['red', 'green', 'yellow', 'blue'];
+                this.currentPlayerIndex = 0;
+                this.positions = {
+                    red: [0],
+                    green: [0],
+                    yellow: [0],
+                    blue: [0]
+                };
+                this.paths = this.generatePaths();
+                this.initializeBoard();
+                this.setupEventListeners();
+            }
+
+            generatePaths() {
+                // Simplified path generation for demo
+                const paths = {
+                    red: Array.from({length: 52}, (_, i) => i + 1),
+                    green: Array.from({length: 52}, (_, i) => i + 1),
+                    yellow: Array.from({length: 52}, (_, i) => i + 1),
+                    blue: Array.from({length: 52}, (_, i) => i + 1)
+                };
+                return paths;
+            }
+
+            initializeBoard() {
+                const board = document.getElementById('board');
+                for(let i = 0; i < 15; i++) {
+                    for(let j = 0; j < 15; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'board-cell';
+                        cell.dataset.x = j;
+                        cell.dataset.y = i;
+                        
+                        // Color home bases
+                        if(i < 6 && j < 6) cell.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
+                        if(i < 6 && j > 8) cell.style.backgroundColor = 'rgba(0, 255, 0, 0.2)';
+                        if(i > 8 && j < 6) cell.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';
+                        if(i > 8 && j > 8) cell.style.backgroundColor = 'rgba(255, 255, 0, 0.2)';
+                        
+                        board.appendChild(cell);
+                    }
+                }
+                this.updatePlayerPositions();
+            }
+
+            setupEventListeners() {
+                document.getElementById('rollDice').addEventListener('click', () => this.rollDice());
+            }
+
+            rollDice() {
+                const result = Math.floor(Math.random() * 6) + 1;
+                document.getElementById('diceResult').textContent = `Dice: ${result}`;
+                
+                const currentPlayer = this.players[this.currentPlayerIndex];
+                this.movePlayer(currentPlayer, result);
+                
+                this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+                document.getElementById('currentPlayer').textContent = 
+                    this.players[this.currentPlayerIndex].charAt(0).toUpperCase() + 
+                    this.players[this.currentPlayerIndex].slice(1);
+            }
+
+            movePlayer(player, steps) {
+                this.positions[player][0] = (this.positions[player][0] + steps) % 52;
+                this.updatePlayerPositions();
+            }
+
+            updatePlayerPositions() {
+                // Remove existing players
+                document.querySelectorAll('.player').forEach(p => p.remove());
+                
+                // Add players at their new positions
+                Object.entries(this.positions).forEach(([player, positions]) => {
+                    positions.forEach(pos => {
+                        const playerDiv = document.createElement('div');
+                        playerDiv.className = 'player';
+                        playerDiv.style.backgroundColor = player;
+                        
+                        // Calculate position on board (simplified)
+                        const x = (pos % 15) * 40;
+                        const y = Math.floor(pos / 15) * 40;
+                        
+                        playerDiv.style.transform = `translate(${x}px, ${y}px)`;
+                        document.getElementById('board').appendChild(playerDiv);
+                    });
+                });
+            }
+        }
+
+        // Start the game
+        document.addEventListener('DOMContentLoaded', () => {
+            new LudoGame();
+        });
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
